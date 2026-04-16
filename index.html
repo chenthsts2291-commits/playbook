@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アメフト プレイブック デザイナー (Yard Lines)</title>
+    <title>アメフト プレイブック デザイナー (Tight OL)</title>
     <style>
         :root {
             --field-color: #81c784; 
@@ -64,7 +64,6 @@
         .btn-clear-def { background-color: #9e9e9e; color: white; }
         .print-btn { background-color: #d32f2f; color: white; margin-left: auto; }
         
-        /* フィールドの枠設定 */
         .field-container {
             position: relative;
             width: 100%;
@@ -76,7 +75,6 @@
             margin-bottom: 20px;
         }
 
-        /* --- ヤードラインの描画 --- */
         .yard-line {
             position: absolute;
             width: 100%;
@@ -88,7 +86,7 @@
             pointer-events: none;
         }
         .yard-line.los {
-            border-top: 3px solid #1976d2; /* LOSは青い実線で強調 */
+            border-top: 3px solid #1976d2; 
         }
         .yard-label {
             background: var(--field-color);
@@ -96,7 +94,7 @@
             padding: 0 10px;
             font-size: 16px;
             font-weight: bold;
-            transform: translateY(-50%); /* 線の中央に数字を配置 */
+            transform: translateY(-50%); 
         }
         .yard-line.los .yard-label {
             color: #1976d2;
@@ -126,7 +124,6 @@
             font-size: 18px;
         }
 
-        /* アサインメント: 縦1列 */
         .assignments {
             display: flex;
             flex-direction: column;
@@ -211,19 +208,19 @@
 </div>
 
 <script>
-    // 選手の初期配置 (y:70 が LOSの上)
+    // OLの間隔を修正し、よりタイトな配置に変更しました
     const offenseData = [
         { id: 'o1', name: 'C', x: 50, y: 70 },
-        { id: 'o2', name: 'LG', x: 42, y: 70 },
-        { id: 'o3', name: 'RG', x: 58, y: 70 },
-        { id: 'o4', name: 'LT', x: 34, y: 70 },
-        { id: 'o5', name: 'RT', x: 66, y: 70 },
-        { id: 'o6', name: 'QB', x: 50, y: 80 },
-        { id: 'o7', name: 'RB', x: 50, y: 90 },
-        { id: 'o8', name: 'TE', x: 74, y: 70 },
+        { id: 'o2', name: 'LG', x: 46, y: 70 },
+        { id: 'o3', name: 'RG', x: 54, y: 70 },
+        { id: 'o4', name: 'LT', x: 42, y: 70 },
+        { id: 'o5', name: 'RT', x: 58, y: 70 },
+        { id: 'o6', name: 'QB', x: 50, y: 78 },
+        { id: 'o7', name: 'RB', x: 50, y: 88 },
+        { id: 'o8', name: 'TE', x: 62, y: 70 },
         { id: 'o9', name: 'WR1', x: 15, y: 70 },
         { id: 'o10', name: 'WR2', x: 85, y: 70 },
-        { id: 'o11', name: 'WR3', x: 25, y: 75 }
+        { id: 'o11', name: 'WR3', x: 25, y: 72 }
     ];
     let defCount = 0;
     let currentMode = 'move';
@@ -282,7 +279,6 @@
         assignmentsContainer.appendChild(box);
     });
 
-    // ポジション名連動
     assignmentsContainer.addEventListener('input', (e) => {
         if (e.target.classList.contains('pos-input')) {
             const targetId = e.target.getAttribute('data-target');
@@ -291,10 +287,9 @@
         }
     });
 
-    // ディフェンスはLOSの少し奥 (y: 65あたり) に生成
     function addDefense() {
         defCount++;
-        createPlayerElement(`d${defCount}`, 'X', 50 + (Math.random()*20-10), 65, 'defense');
+        createPlayerElement(`d${defCount}`, 'X', 50 + (Math.random()*20-10), 60, 'defense');
     }
 
     function clearDefense() {
