@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アメフト プレイブック デザイナー (Advanced)</title>
+    <title>アメフト プレイブック デザイナー (Vertical Layout)</title>
     <style>
         :root {
-            --field-color: #81c784; /* 薄い緑に変更 */
+            --field-color: #81c784; 
             --line-color: #ffffff;
             --offense-color: #1565c0;
-            --defense-color: #000000; /* 黒に変更 */
+            --defense-color: #000000;
         }
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -64,6 +64,7 @@
         .btn-clear-def { background-color: #9e9e9e; color: white; }
         .print-btn { background-color: #d32f2f; color: white; margin-left: auto; }
         
+        /* フィールド: 5ヤードごとのライン */
         .field-container {
             position: relative;
             width: 100%;
@@ -73,10 +74,15 @@
             border-radius: 4px;
             overflow: hidden;
             margin-bottom: 20px;
+            /* 5%ごとに線を引く（100ヤードを想定して5ヤード刻み） */
             background-image: repeating-linear-gradient(
-                to right, transparent, transparent 49.5%, var(--line-color) 49.5%, var(--line-color) 50.5%
+                to right, 
+                transparent, 
+                transparent 4.8%, 
+                rgba(255, 255, 255, 0.5) 4.8%, 
+                rgba(255, 255, 255, 0.5) 5.2%
             );
-            background-size: 10% 100%;
+            background-size: 100% 100%;
         }
         #drawing-canvas {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10;
@@ -90,7 +96,7 @@
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-size: 12px; font-weight: bold; user-select: none;
             cursor: grab; border: 2px solid #fff; transform: translate(-50%, -50%);
-            pointer-events: auto; /* ドラッグ可能にする */
+            pointer-events: auto;
         }
         .player:active { cursor: grabbing; }
         .player.offense { background-color: var(--offense-color); color: white; }
@@ -101,24 +107,45 @@
             font-size: 18px;
         }
 
+        /* アサインメント: 縦1列（11行）の配置に変更 */
         .assignments {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;
+            display: flex;
+            flex-direction: column; /* 縦に並べる */
+            gap: 15px;
         }
         .assignment-box { 
-            display: flex; flex-direction: column; background: #fafafa; padding: 12px; 
-            border-radius: 6px; border: 1px solid #ddd; 
+            display: flex; 
+            flex-direction: row; /* ラベルと入力欄を横に並べる */
+            align-items: flex-start;
+            background: #fafafa; 
+            padding: 15px; 
+            border-radius: 6px; 
+            border: 1px solid #ddd; 
+            gap: 15px;
+        }
+        .assignment-label-area {
+            display: flex;
+            flex-direction: column;
+            width: 100px;
+            flex-shrink: 0;
+        }
+        .assignment-label-area label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
         }
         .assignment-box input {
-            font-weight: bold; margin-bottom: 8px; font-size: 15px; padding: 6px;
-            border: 1px solid #ccc; border-radius: 4px; width: 90px;
+            font-weight: bold; font-size: 16px; padding: 8px;
+            border: 1px solid #ccc; border-radius: 4px; width: 100%;
+            text-align: center;
         }
         .assignment-box textarea {
-            height: 100px; /* 入力欄を長くしました */
-            resize: vertical; padding: 10px; border: 1px solid #ccc; 
-            border-radius: 4px; font-size: 15px; line-height: 1.5; /* 文字を見やすく調整 */
+            flex-grow: 1; /* 残りの幅をすべて使う */
+            height: 80px;
+            resize: vertical; padding: 12px; border: 1px solid #ccc; 
+            border-radius: 4px; font-size: 15px; line-height: 1.6;
         }
 
-        /* 印刷用スタイル */
         @media print {
             body { background: #fff; padding: 0; }
             .container { box-shadow: none; max-width: 100%; padding: 0; }
@@ -150,21 +177,15 @@
 
     <div class="field-container" id="field">
         <canvas id="drawing-canvas"></canvas>
-        <div id="field-players">
-            </div>
+        <div id="field-players"></div>
     </div>
 
     <h3>ポジションごとの動き（アサイメント）</h3>
-    <p style="font-size: 13px; color: #555;">
-        ※ポジション名を書き換えると図も連動します。<br>
-        ※追加したディフェンス(×)は、<b>ダブルクリック（スマホはダブルタップ）で削除</b>できます。
-    </p>
     <div class="assignments" id="assignments-container">
         </div>
 </div>
 
 <script>
-    // --- データ（状態）の定義 ---
     const offenseData = [
         { id: 'o1', name: 'C', x: 50, y: 50 },
         { id: 'o2', name: 'LG', x: 45, y: 50 },
@@ -179,9 +200,9 @@
         { id: 'o11', name: 'WR3', x: 10, y: 50 }
     ];
     let defCount = 0;
-
     let currentMode = 'move';
     let isDrawing = false;
+    let lastTap = 0;
     
     const fieldPlayers = document.getElementById('field-players');
     const assignmentsContainer = document.getElementById('assignments-container');
@@ -196,9 +217,6 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // スマホでのダブルタップ判定用変数
-    let lastTap = 0;
-
     function createPlayerElement(id, name, x, y, type) {
         const div = document.createElement('div');
         div.className = `player ${type}`;
@@ -206,18 +224,11 @@
         div.innerText = type === 'defense' ? '×' : name;
         div.style.left = `${x}%`;
         div.style.top = `${y}%`;
-        
-        // ドラッグイベント
         div.addEventListener('mousedown', startDrag);
         div.addEventListener('touchstart', startDrag, {passive: false});
 
-        // 削除イベント（ディフェンスのみ）
         if (type === 'defense') {
-            // PC向けのダブルクリック
-            div.addEventListener('dblclick', () => {
-                div.remove();
-            });
-            // スマホ向けのダブルタップ
+            div.addEventListener('dblclick', () => div.remove());
             div.addEventListener('touchend', (e) => {
                 const currentTime = new Date().getTime();
                 const tapLength = currentTime - lastTap;
@@ -228,39 +239,39 @@
                 lastTap = currentTime;
             });
         }
-        
         fieldPlayers.appendChild(div);
     }
 
     offenseData.forEach(p => {
         createPlayerElement(p.id, p.name, p.x, p.y, 'offense');
-
         const box = document.createElement('div');
         box.className = 'assignment-box';
         box.innerHTML = `
-            <input type="text" value="${p.name}" data-target="${p.id}" class="pos-input" title="ポジション名">
-            <textarea placeholder="動きを詳しく入力..."></textarea>
+            <div class="assignment-label-area">
+                <label>ポジション名</label>
+                <input type="text" value="${p.name}" data-target="${p.id}" class="pos-input">
+            </div>
+            <textarea placeholder="${p.name} の動き・役割を詳細に記入..."></textarea>
         `;
         assignmentsContainer.appendChild(box);
     });
 
-    document.querySelectorAll('.pos-input').forEach(input => {
-        input.addEventListener('input', (e) => {
+    // ポジション名連動
+    assignmentsContainer.addEventListener('input', (e) => {
+        if (e.target.classList.contains('pos-input')) {
             const targetId = e.target.getAttribute('data-target');
-            const newName = e.target.value;
             const playerNode = document.getElementById(`node-${targetId}`);
-            if (playerNode) playerNode.innerText = newName;
-        });
+            if (playerNode) playerNode.innerText = e.target.value;
+        }
     });
 
     function addDefense() {
         defCount++;
-        const newId = `d${defCount}`;
-        createPlayerElement(newId, 'X', 50 + (Math.random() * 10 - 5), 35, 'defense');
+        createPlayerElement(`d${defCount}`, 'X', 50 + (Math.random()*10-5), 30, 'defense');
     }
 
     function clearDefense() {
-        if(confirm("配置したディフェンスをすべて消去しますか？")) {
+        if(confirm("ディフェンスをすべて消去しますか？")) {
             document.querySelectorAll('.player.defense').forEach(el => el.remove());
         }
     }
@@ -271,7 +282,6 @@
         document.getElementById('btn-draw').classList.toggle('active', mode === 'draw');
         canvas.style.pointerEvents = mode === 'draw' ? 'auto' : 'none';
     }
-    canvas.style.pointerEvents = 'none';
 
     function getPointerPos(e) {
         const rect = canvas.getBoundingClientRect();
@@ -316,41 +326,22 @@
         const rect = draggedElement.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        
         offsetX = clientX - (rect.left + rect.width / 2);
         offsetY = clientY - (rect.top + rect.height / 2);
         e.preventDefault();
     }
 
-    document.addEventListener('mousemove', drag);
-    document.addEventListener('touchmove', drag, {passive: false});
-
-    function drag(e) {
+    document.addEventListener('mousemove', (e) => {
         if (!draggedElement || currentMode !== 'move') return;
         const rect = field.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
-        let x = clientX - rect.left - offsetX;
-        let y = clientY - rect.top - offsetY;
-
-        x = Math.max(15, Math.min(x, rect.width - 15));
-        y = Math.max(15, Math.min(y, rect.height - 15));
-
+        let x = Math.max(15, Math.min((e.touches ? e.touches[0].clientX : e.clientX) - rect.left - offsetX, rect.width - 15));
+        let y = Math.max(15, Math.min((e.touches ? e.touches[0].clientY : e.clientY) - rect.top - offsetY, rect.height - 15));
         draggedElement.style.left = (x / rect.width * 100) + '%';
         draggedElement.style.top = (y / rect.height * 100) + '%';
-        e.preventDefault();
-    }
-
-    document.addEventListener('mouseup', () => draggedElement = null);
-    // タッチ終了時はダブルタップ判定のためにここではdraggedElementをnullにしない（各要素のtouchendで処理）
-    document.addEventListener('touchend', (e) => {
-        if (draggedElement && e.target !== draggedElement) {
-            draggedElement = null;
-        }
-        setTimeout(() => { draggedElement = null; }, 100);
     });
 
+    document.addEventListener('mouseup', () => draggedElement = null);
+    document.addEventListener('touchend', () => { setTimeout(() => { draggedElement = null; }, 100); });
 </script>
 </body>
 </html>
