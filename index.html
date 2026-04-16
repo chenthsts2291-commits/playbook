@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アメフト プレイブック プロ (Advanced Editor)</title>
+    <title>アメフト プレイブック プロ (Rule & Flip)</title>
     <style>
         :root {
             --field-color: #81c784; --line-color: #ffffff;
@@ -14,14 +14,16 @@
         
         /* 警告表示 */
         #alert-panel {
-            display: none; background-color: #ff5252; color: white;
+            display: none; background-color: #d32f2f; color: white;
             padding: 10px; border-radius: 4px; margin-bottom: 15px;
-            font-weight: bold; text-align: center; animation: blink 1s infinite;
+            font-weight: bold; text-align: center; animation: blink 1.5s infinite;
         }
-        @keyframes blink { 0% {opacity: 1;} 50% {opacity: 0.7;} 100% {opacity: 1;} }
-
-        .save-load-area { background-color: #e3f2fd; padding: 15px; border-radius: 6px; margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; border: 1px solid #90caf9; }
-        .save-load-area select { padding: 8px; flex: 1; min-width: 200px; }
+        #info-panel {
+            background-color: #e8f5e9; color: #2e7d32;
+            padding: 8px; border-radius: 4px; margin-bottom: 15px;
+            font-size: 13px; font-weight: bold; text-align: center; border: 1px solid #c8e6c9;
+        }
+        @keyframes blink { 0% {opacity: 1;} 50% {opacity: 0.8;} 100% {opacity: 1;} }
 
         .header { display: flex; gap: 15px; margin-bottom: 20px; }
         .header input { flex: 1; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; }
@@ -34,7 +36,8 @@
         button.active { background-color: #4caf50; color: white; border-color: #4caf50; }
         button:hover { background-color: #f0f0f0; }
         .btn-action { background-color: #607d8b; color: white; border: none; }
-        .print-btn { background-color: #d32f2f; color: white; margin-left: auto; border: none; }
+        .btn-flip { background-color: #ff9800; color: white; border: none; }
+        .btn-flip:hover { background-color: #f57c00; }
         
         .field-container { position: relative; width: 100%; height: 450px; background-color: var(--field-color); border: 2px solid var(--line-color); border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
         .yard-line { position: absolute; width: 100%; border-top: 2px dashed rgba(255, 255, 255, 0.5); display: flex; justify-content: space-between; align-items: center; z-index: 5; pointer-events: none; }
@@ -43,12 +46,15 @@
 
         canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         #drawing-canvas { z-index: 10; }
-        #temp-canvas { z-index: 11; pointer-events: none; } /* 直線描画のプレビュー用 */
+        #temp-canvas { z-index: 11; pointer-events: none; }
         #field-players { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none; }
         
-        .player { position: absolute; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; user-select: none; cursor: grab; border: 2px solid #fff; transform: translate(-50%, -50%); pointer-events: auto; }
+        .player { position: absolute; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; user-select: none; cursor: grab; border: 2px solid #fff; transform: translate(-50%, -50%); pointer-events: auto; transition: border 0.2s, box-shadow 0.2s; }
         .player.offense { background-color: var(--offense-color); color: white; }
         .player.defense { background-color: transparent; color: var(--defense-color); border: 2px solid var(--defense-color); font-size: 18px; }
+        
+        /* 有資格レシーバーのハイライト */
+        .player.eligible { border: 3px solid #ffeb3b !important; box-shadow: 0 0 8px #ffeb3b; color: #fff; }
 
         .assignments { display: flex; flex-direction: column; gap: 10px; }
         .assignment-box { display: flex; flex-direction: row; align-items: flex-start; background: #fafafa; padding: 12px; border-radius: 6px; border: 1px solid #ddd; gap: 12px; }
@@ -56,7 +62,7 @@
         .assignment-box textarea { flex-grow: 1; height: 60px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
 
         @media print {
-            .toolbar, .save-load-area, #alert-panel { display: none !important; }
+            .toolbar, #alert-panel, #info-panel { display: none !important; }
             .container { box-shadow: none; padding: 0; }
             .assignment-box { break-inside: avoid; }
         }
@@ -65,16 +71,9 @@
 <body>
 
 <div class="container">
-    <div id="alert-panel">⚠️ イリーガル・フォーメーション: LOSより後ろに6人以上配置されています！</div>
+    <div id="alert-panel">⚠️ イリーガル・フォーメーション: LOS上には最低7人必要です！</div>
+    <div id="info-panel">💡 【ルール判定】 黄色の枠線の選手（LOS両端＋バックフィールド）が有資格レシーバーです</div>
 
-    <div class="save-load-area">
-        <button class="btn-primary" onclick="savePlayData()">保存</button>
-        <select id="saved-plays-dropdown"><option value="">-- ロード --</option></select>
-        <button onclick="loadPlayData()">読込</button>
-        <button onclick="exportPlayData()" class="btn-action">📤 共有コード</button>
-        <button onclick="importPlayData()" class="btn-action">📥 読込</button>
-    </div>
-    
     <div class="header">
         <input type="text" id="formation-name" placeholder="隊形名">
         <input type="text" id="play-name" placeholder="サイン名">
@@ -93,10 +92,11 @@
             <button id="btn-style-solid" class="active" onclick="setLineStyle('solid')">実線</button>
             <button id="btn-style-dashed" onclick="setLineStyle('dashed')">点線</button>
         </div>
-        <button onclick="undo()">一つ戻す</button>
-        <button onclick="clearCanvas()">全消去</button>
-        <button class="btn-add-def" onclick="addDefense()">+ 敵追加</button>
-        <button class="print-btn" onclick="window.print()">PDF保存</button>
+        <div class="tool-group">
+            <button onclick="undo()">一つ戻す</button>
+            <button onclick="clearCanvas()">全消去</button>
+            <button class="btn-flip" onclick="flipFormation()">左右反転(Flip)</button>
+        </div>
     </div>
 
     <div class="field-container" id="field">
@@ -115,18 +115,26 @@
 </div>
 
 <script>
+    // 初期配置：X, ZをLOS上、H, Yをバックフィールドに設定
     const offenseInitialData = [
-        { id: 'o1', name: 'C', x: 50, y: 70 }, { id: 'o2', name: 'LG', x: 46, y: 70 }, { id: 'o3', name: 'RG', x: 54, y: 70 },
-        { id: 'o4', name: 'LT', x: 42, y: 70 }, { id: 'o5', name: 'RT', x: 58, y: 70 }, { id: 'o6', name: 'QB', x: 50, y: 78 },
-        { id: 'o7', name: 'RB', x: 50, y: 88 }, { id: 'o8', name: 'TE', x: 62, y: 70 }, { id: 'o9', name: 'WR1', x: 15, y: 70 },
-        { id: 'o10', name: 'WR2', x: 85, y: 70 }, { id: 'o11', name: 'WR3', x: 25, y: 72 }
+        { id: 'o1', name: 'C', x: 50, y: 70 }, 
+        { id: 'o2', name: 'LG', x: 44, y: 70 }, 
+        { id: 'o3', name: 'RG', x: 56, y: 70 },
+        { id: 'o4', name: 'LT', x: 38, y: 70 }, 
+        { id: 'o5', name: 'RT', x: 62, y: 70 }, 
+        { id: 'o6', name: 'QB', x: 50, y: 78 },
+        { id: 'o7', name: 'RB', x: 50, y: 88 }, 
+        { id: 'o8', name: 'Y', x: 72, y: 75 }, // TEをYとし、バックフィールドへ
+        { id: 'o9', name: 'X', x: 15, y: 70 }, // WR1をXに
+        { id: 'o10', name: 'Z', x: 85, y: 70 }, // WR2をZに
+        { id: 'o11', name: 'H', x: 28, y: 75 }  // WR3をHとし、バックフィールドへ
     ];
 
     let currentMode = 'move';
     let lineStyle = 'solid';
     let isDrawing = false;
     let startX, startY;
-    let paths = []; // 描画履歴
+    let paths = [];
     
     const canvas = document.getElementById('drawing-canvas');
     const ctx = canvas.getContext('2d');
@@ -144,24 +152,70 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // --- 選手作成 & ルールチェック ---
+    // --- ルール判定：イリーガルフォーメーション & 有資格レシーバー ---
     function checkFormation() {
-        const players = document.querySelectorAll('.player.offense');
-        const losTop = field.clientHeight * 0.7; // LOSの位置
-        let behindCount = 0;
+        const players = Array.from(document.querySelectorAll('.player.offense'));
+        const losTop = field.clientHeight * 0.7; // LOSのY座標ピクセル
+        
+        let losPlayers = [];
+        let backfieldPlayers = [];
 
         players.forEach(p => {
             const rect = p.getBoundingClientRect();
             const fieldRect = field.getBoundingClientRect();
             const pCenterY = (rect.top + rect.height/2) - fieldRect.top;
             
-            // LOS（実線）より後ろ（数値が大きい方）にいるか判定
-            if (pCenterY > losTop + 5) { // わずかな誤差を許容
-                behindCount++;
+            // LOS上かどうかの判定 (LOSの線から下方向に+15pxの余裕を持たせる)
+            if (pCenterY > losTop + 15) { 
+                backfieldPlayers.push(p);
+            } else {
+                losPlayers.push({ element: p, x: parseFloat(p.style.left) });
             }
         });
 
-        document.getElementById('alert-panel').style.display = (behindCount >= 6) ? 'block' : 'none';
+        const alertPanel = document.getElementById('alert-panel');
+        
+        // 1. イリーガル検知 (バックフィールドに5人以上 = LOS上が6人以下)
+        if (losPlayers.length < 7) {
+            alertPanel.style.display = 'block';
+            alertPanel.innerHTML = `⚠️ イリーガル・フォーメーション: LOS上には最低7人必要です！（現在LOS上: ${losPlayers.length}人 / バックフィールド: ${backfieldPlayers.length}人）`;
+        } else {
+            alertPanel.style.display = 'none';
+        }
+
+        // 2. 有資格レシーバーのハイライト
+        players.forEach(p => p.classList.remove('eligible'));
+
+        // バックフィールドの選手は全員有資格
+        backfieldPlayers.forEach(p => p.classList.add('eligible'));
+
+        // LOS上の選手をX座標でソートし、両端の2人を「有資格」とする
+        if (losPlayers.length > 0) {
+            losPlayers.sort((a, b) => a.x - b.x); // 左から順に並べる
+            losPlayers[0].element.classList.add('eligible'); // 左端
+            if (losPlayers.length > 1) {
+                losPlayers[losPlayers.length - 1].element.classList.add('eligible'); // 右端
+            }
+        }
+    }
+
+    // --- 左右反転 (フリップ) 機能 ---
+    function flipFormation() {
+        // 選手の位置を反転 (100% - 現在の%)
+        document.querySelectorAll('.player').forEach(p => {
+            let currentLeft = parseFloat(p.style.left);
+            p.style.left = `${100 - currentLeft}%`;
+        });
+
+        // 描かれた線を反転 (Canvasの幅 - 現在のx座標)
+        paths.forEach(path => {
+            path.points.forEach(pt => {
+                pt.x = canvas.width - pt.x;
+            });
+        });
+
+        redrawAll();
+        checkFormation();
     }
 
     function createPlayerElement(id, name, x, y, type) {
@@ -171,7 +225,6 @@
         div.style.top = typeof y === 'number' ? `${y}%` : y;
         div.addEventListener('mousedown', startDrag);
         div.addEventListener('touchstart', startDrag, {passive: false});
-        if (type === 'defense') div.addEventListener('dblclick', () => div.remove());
         document.getElementById('field-players').appendChild(div);
     }
 
@@ -228,7 +281,6 @@
         }
         isDrawing = false;
         redrawAll();
-        checkFormation();
     });
 
     function drawSinglePath(targetCtx, path) {
@@ -280,7 +332,7 @@
         const cy = e.touches ? e.touches[0].clientY : e.clientY;
         dragged.style.left = `${Math.max(0, Math.min(100, (cx - r.left - ox) / r.width * 100))}%`;
         dragged.style.top = `${Math.max(0, Math.min(100, (cy - r.top - oy) / r.height * 100))}%`;
-        checkFormation();
+        checkFormation(); // 移動中に随時判定
     });
     document.addEventListener('mouseup', () => dragged = null);
 
@@ -299,64 +351,8 @@
         }
     });
 
-    function addDefense() { createPlayerElement(`d${Date.now()}`, 'X', 50, 40, 'defense'); }
-
-    // --- 保存・共有 (前回の機能の統合) ---
-    function savePlayData() {
-        const name = document.getElementById('play-name').value || '無題';
-        const data = { 
-            formation: document.getElementById('formation-name').value, 
-            name: name,
-            offense: Array.from(document.querySelectorAll('.player.offense')).map(el => ({id: el.id, x: el.style.left, y: el.style.top, name: el.innerText})),
-            defense: Array.from(document.querySelectorAll('.player.defense')).map(el => ({x: el.style.left, y: el.style.top})),
-            paths: paths,
-            texts: Array.from(document.querySelectorAll('.assignment-text')).map(el => el.value)
-        };
-        const saves = JSON.parse(localStorage.getItem('playbook_v2') || '{}');
-        saves[name] = data;
-        localStorage.setItem('playbook_v2', JSON.stringify(saves));
-        alert('保存しました');
-        updateDropdown();
-    }
-
-    function updateDropdown() {
-        const ds = JSON.parse(localStorage.getItem('playbook_v2') || '{}');
-        const sel = document.getElementById('saved-plays-dropdown');
-        sel.innerHTML = '<option value="">-- ロード --</option>';
-        Object.keys(ds).forEach(k => sel.innerHTML += `<option value="${k}">${k}</option>`);
-    }
-
-    function loadPlayData() {
-        const name = document.getElementById('saved-plays-dropdown').value;
-        const d = JSON.parse(localStorage.getItem('playbook_v2') || '{}')[name];
-        if (!d) return;
-        document.getElementById('field-players').innerHTML = '';
-        d.offense.forEach(p => createPlayerElement(p.id.replace('node-',''), p.name, p.x, p.y, 'offense'));
-        d.defense.forEach(p => createPlayerElement(`d${Math.random()}`, 'X', p.x, p.y, 'defense'));
-        paths = d.paths;
-        document.querySelectorAll('.assignment-text').forEach((el, i) => el.value = d.texts[i] || '');
-        document.getElementById('formation-name').value = d.formation;
-        document.getElementById('play-name').value = d.name;
-        redrawAll(); checkFormation();
-    }
-
-    function exportPlayData() {
-        const d = JSON.stringify(buildFullData());
-        navigator.clipboard.writeText(d).then(() => alert("コードをコピーしました"));
-    }
-
-    function buildFullData() {
-        return { 
-            f: document.getElementById('formation-name').value, 
-            n: document.getElementById('play-name').value,
-            o: Array.from(document.querySelectorAll('.player.offense')).map(el => ({i: el.id, x: el.style.left, y: el.style.top, n: el.innerText})),
-            d: Array.from(document.querySelectorAll('.player.defense')).map(el => ({x: el.style.left, y: el.style.top})),
-            p: paths,
-            t: Array.from(document.querySelectorAll('.assignment-text')).map(el => el.value)
-        };
-    }
-
-    updateDropdown();
+    // 読み込み直後に初期判定を実行
+    setTimeout(checkFormation, 100);
 </script>
 </body>
 </html>
