@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アメフト プレイブック プロ (Rule & Flip)</title>
+    <title>アメフト プレイブック プロ (Ultimate Edition)</title>
     <style>
         :root {
             --field-color: #81c784; --line-color: #ffffff;
@@ -12,32 +12,25 @@
         body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; color: #333; }
         .container { max-width: 1000px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        /* 警告表示 */
-        #alert-panel {
-            display: none; background-color: #d32f2f; color: white;
-            padding: 10px; border-radius: 4px; margin-bottom: 15px;
-            font-weight: bold; text-align: center; animation: blink 1.5s infinite;
-        }
-        #info-panel {
-            background-color: #e8f5e9; color: #2e7d32;
-            padding: 8px; border-radius: 4px; margin-bottom: 15px;
-            font-size: 13px; font-weight: bold; text-align: center; border: 1px solid #c8e6c9;
-        }
+        #alert-panel { display: none; background-color: #d32f2f; color: white; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-weight: bold; text-align: center; animation: blink 1.5s infinite; }
+        #info-panel { background-color: #e8f5e9; color: #2e7d32; padding: 8px; border-radius: 4px; margin-bottom: 15px; font-size: 13px; font-weight: bold; text-align: center; border: 1px solid #c8e6c9; }
         @keyframes blink { 0% {opacity: 1;} 50% {opacity: 0.8;} 100% {opacity: 1;} }
+
+        .save-load-area { background-color: #e3f2fd; padding: 15px; border-radius: 6px; margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; border: 1px solid #90caf9; }
+        .save-load-area select { padding: 8px; flex: 1; min-width: 200px; border-radius: 4px; border: 1px solid #ccc; }
 
         .header { display: flex; gap: 15px; margin-bottom: 20px; }
         .header input { flex: 1; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; }
         
         .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; background: #f9f9f9; padding: 10px; border-radius: 4px; }
         .tool-group { display: flex; gap: 4px; border-right: 2px solid #ddd; padding-right: 8px; margin-right: 8px; }
-        .tool-group:last-child { border-right: none; }
         
         button { padding: 8px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; background-color: #fff; cursor: pointer; font-weight: bold; }
         button.active { background-color: #4caf50; color: white; border-color: #4caf50; }
-        button:hover { background-color: #f0f0f0; }
         .btn-action { background-color: #607d8b; color: white; border: none; }
+        .btn-primary { background-color: #1976d2; color: white; border: none; }
         .btn-flip { background-color: #ff9800; color: white; border: none; }
-        .btn-flip:hover { background-color: #f57c00; }
+        .print-btn { background-color: #d32f2f; color: white; margin-left: auto; border: none; }
         
         .field-container { position: relative; width: 100%; height: 450px; background-color: var(--field-color); border: 2px solid var(--line-color); border-radius: 4px; overflow: hidden; margin-bottom: 20px; }
         .yard-line { position: absolute; width: 100%; border-top: 2px dashed rgba(255, 255, 255, 0.5); display: flex; justify-content: space-between; align-items: center; z-index: 5; pointer-events: none; }
@@ -49,20 +42,18 @@
         #temp-canvas { z-index: 11; pointer-events: none; }
         #field-players { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none; }
         
-        .player { position: absolute; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; user-select: none; cursor: grab; border: 2px solid #fff; transform: translate(-50%, -50%); pointer-events: auto; transition: border 0.2s, box-shadow 0.2s; }
+        .player { position: absolute; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; user-select: none; cursor: grab; border: 2px solid #fff; transform: translate(-50%, -50%); pointer-events: auto; }
         .player.offense { background-color: var(--offense-color); color: white; }
         .player.defense { background-color: transparent; color: var(--defense-color); border: 2px solid var(--defense-color); font-size: 18px; }
-        
-        /* 有資格レシーバーのハイライト */
-        .player.eligible { border: 3px solid #ffeb3b !important; box-shadow: 0 0 8px #ffeb3b; color: #fff; }
+        .player.eligible { border: 3px solid #ffeb3b !important; box-shadow: 0 0 8px #ffeb3b; }
 
         .assignments { display: flex; flex-direction: column; gap: 10px; }
         .assignment-box { display: flex; flex-direction: row; align-items: flex-start; background: #fafafa; padding: 12px; border-radius: 6px; border: 1px solid #ddd; gap: 12px; }
         .assignment-label-area { width: 100px; flex-shrink: 0; }
-        .assignment-box textarea { flex-grow: 1; height: 60px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        .assignment-box textarea { flex-grow: 1; height: 70px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
 
         @media print {
-            .toolbar, #alert-panel, #info-panel { display: none !important; }
+            .toolbar, .save-load-area, #alert-panel, #info-panel { display: none !important; }
             .container { box-shadow: none; padding: 0; }
             .assignment-box { break-inside: avoid; }
         }
@@ -72,8 +63,17 @@
 
 <div class="container">
     <div id="alert-panel">⚠️ イリーガル・フォーメーション: LOS上には最低7人必要です！</div>
-    <div id="info-panel">💡 【ルール判定】 黄色の枠線の選手（LOS両端＋バックフィールド）が有資格レシーバーです</div>
+    <div id="info-panel">💡 【ルール】黄色の枠線の選手が有資格レシーバーです。</div>
 
+    <div class="save-load-area">
+        <button class="btn-primary" onclick="savePlayData()">保存</button>
+        <select id="saved-plays-dropdown"><option value="">-- ロード --</option></select>
+        <button onclick="loadPlayData()">読込</button>
+        <button onclick="deletePlayData()" style="background-color: #ef5350; color: white;">削除</button>
+        <button onclick="exportPlayData()" class="btn-action">📤 共有コードをコピー</button>
+        <button onclick="importPlayData()" class="btn-action" style="background-color: #607d8b;">📥 コードを読込</button>
+    </div>
+    
     <div class="header">
         <input type="text" id="formation-name" placeholder="隊形名">
         <input type="text" id="play-name" placeholder="サイン名">
@@ -97,6 +97,8 @@
             <button onclick="clearCanvas()">全消去</button>
             <button class="btn-flip" onclick="flipFormation()">左右反転(Flip)</button>
         </div>
+        <button class="btn-action" style="background-color: #ffb74d; color: #333;" onclick="addDefense()">+ 敵追加</button>
+        <button class="print-btn" onclick="window.print()">PDF保存</button>
     </div>
 
     <div class="field-container" id="field">
@@ -115,19 +117,14 @@
 </div>
 
 <script>
-    // 初期配置：X, ZをLOS上、H, Yをバックフィールドに設定
+    // タイトなOLスプリット幅に修正
     const offenseInitialData = [
         { id: 'o1', name: 'C', x: 50, y: 70 }, 
-        { id: 'o2', name: 'LG', x: 44, y: 70 }, 
-        { id: 'o3', name: 'RG', x: 56, y: 70 },
-        { id: 'o4', name: 'LT', x: 38, y: 70 }, 
-        { id: 'o5', name: 'RT', x: 62, y: 70 }, 
-        { id: 'o6', name: 'QB', x: 50, y: 78 },
-        { id: 'o7', name: 'RB', x: 50, y: 88 }, 
-        { id: 'o8', name: 'Y', x: 72, y: 75 }, // TEをYとし、バックフィールドへ
-        { id: 'o9', name: 'X', x: 15, y: 70 }, // WR1をXに
-        { id: 'o10', name: 'Z', x: 85, y: 70 }, // WR2をZに
-        { id: 'o11', name: 'H', x: 28, y: 75 }  // WR3をHとし、バックフィールドへ
+        { id: 'o2', name: 'LG', x: 46, y: 70 }, { id: 'o3', name: 'RG', x: 54, y: 70 },
+        { id: 'o4', name: 'LT', x: 42, y: 70 }, { id: 'o5', name: 'RT', x: 58, y: 70 }, 
+        { id: 'o6', name: 'QB', x: 50, y: 78 }, { id: 'o7', name: 'RB', x: 50, y: 88 }, 
+        { id: 'o8', name: 'Y', x: 62, y: 75 }, { id: 'o9', name: 'X', x: 15, y: 70 }, 
+        { id: 'o10', name: 'Z', x: 85, y: 70 }, { id: 'o11', name: 'H', x: 25, y: 75 }
     ];
 
     let currentMode = 'move';
@@ -152,70 +149,34 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // --- ルール判定：イリーガルフォーメーション & 有資格レシーバー ---
     function checkFormation() {
         const players = Array.from(document.querySelectorAll('.player.offense'));
-        const losTop = field.clientHeight * 0.7; // LOSのY座標ピクセル
-        
+        const losTop = field.clientHeight * 0.7;
         let losPlayers = [];
         let backfieldPlayers = [];
 
         players.forEach(p => {
             const rect = p.getBoundingClientRect();
-            const fieldRect = field.getBoundingClientRect();
-            const pCenterY = (rect.top + rect.height/2) - fieldRect.top;
-            
-            // LOS上かどうかの判定 (LOSの線から下方向に+15pxの余裕を持たせる)
-            if (pCenterY > losTop + 15) { 
-                backfieldPlayers.push(p);
-            } else {
-                losPlayers.push({ element: p, x: parseFloat(p.style.left) });
-            }
+            const fRect = field.getBoundingClientRect();
+            const pY = (rect.top + rect.height/2) - fRect.top;
+            if (pY > losTop + 15) backfieldPlayers.push(p);
+            else losPlayers.push({ el: p, x: parseFloat(p.style.left) });
         });
 
-        const alertPanel = document.getElementById('alert-panel');
-        
-        // 1. イリーガル検知 (バックフィールドに5人以上 = LOS上が6人以下)
-        if (losPlayers.length < 7) {
-            alertPanel.style.display = 'block';
-            alertPanel.innerHTML = `⚠️ イリーガル・フォーメーション: LOS上には最低7人必要です！（現在LOS上: ${losPlayers.length}人 / バックフィールド: ${backfieldPlayers.length}人）`;
-        } else {
-            alertPanel.style.display = 'none';
-        }
-
-        // 2. 有資格レシーバーのハイライト
+        document.getElementById('alert-panel').style.display = (losPlayers.length < 7) ? 'block' : 'none';
         players.forEach(p => p.classList.remove('eligible'));
-
-        // バックフィールドの選手は全員有資格
         backfieldPlayers.forEach(p => p.classList.add('eligible'));
-
-        // LOS上の選手をX座標でソートし、両端の2人を「有資格」とする
         if (losPlayers.length > 0) {
-            losPlayers.sort((a, b) => a.x - b.x); // 左から順に並べる
-            losPlayers[0].element.classList.add('eligible'); // 左端
-            if (losPlayers.length > 1) {
-                losPlayers[losPlayers.length - 1].element.classList.add('eligible'); // 右端
-            }
+            losPlayers.sort((a, b) => a.x - b.x);
+            losPlayers[0].el.classList.add('eligible');
+            if (losPlayers.length > 1) losPlayers[losPlayers.length - 1].el.classList.add('eligible');
         }
     }
 
-    // --- 左右反転 (フリップ) 機能 ---
     function flipFormation() {
-        // 選手の位置を反転 (100% - 現在の%)
-        document.querySelectorAll('.player').forEach(p => {
-            let currentLeft = parseFloat(p.style.left);
-            p.style.left = `${100 - currentLeft}%`;
-        });
-
-        // 描かれた線を反転 (Canvasの幅 - 現在のx座標)
-        paths.forEach(path => {
-            path.points.forEach(pt => {
-                pt.x = canvas.width - pt.x;
-            });
-        });
-
-        redrawAll();
-        checkFormation();
+        document.querySelectorAll('.player').forEach(p => p.style.left = `${100 - parseFloat(p.style.left)}%`);
+        paths.forEach(p => p.points.forEach(pt => pt.x = canvas.width - pt.x));
+        redrawAll(); checkFormation();
     }
 
     function createPlayerElement(id, name, x, y, type) {
@@ -225,15 +186,15 @@
         div.style.top = typeof y === 'number' ? `${y}%` : y;
         div.addEventListener('mousedown', startDrag);
         div.addEventListener('touchstart', startDrag, {passive: false});
+        if (type === 'defense') div.addEventListener('dblclick', () => { div.remove(); checkFormation(); });
         document.getElementById('field-players').appendChild(div);
     }
 
-    // --- 描画エンジン ---
+    // --- 描画ロジック ---
     function setMode(mode) {
         currentMode = mode;
-        ['btn-move', 'btn-draw-free', 'btn-draw-line', 'btn-erase'].forEach(id => {
-            document.getElementById(id).classList.toggle('active', id === `btn-${mode}`);
-        });
+        ['btn-move', 'btn-draw-free', 'btn-draw-line', 'btn-erase'].forEach(id => document.getElementById(id).classList.toggle('active', id === `btn-${mode}`));
+        canvas.style.pointerEvents = (mode === 'move') ? 'none' : 'auto';
     }
 
     function setLineStyle(style) {
@@ -243,10 +204,10 @@
     }
 
     function getPos(e) {
-        const rect = canvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX - rect.left, y: clientY - rect.top };
+        const r = canvas.getBoundingClientRect();
+        const cx = e.touches ? e.touches[0].clientX : e.clientX;
+        const cy = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: cx - r.left, y: cy - r.top };
     }
 
     field.addEventListener('mousedown', (e) => {
@@ -254,15 +215,12 @@
         isDrawing = true;
         const pos = getPos(e);
         startX = pos.x; startY = pos.y;
-        if (currentMode === 'draw-free' || currentMode === 'erase') {
-            paths.push({ mode: currentMode, style: lineStyle, points: [pos] });
-        }
+        if (currentMode !== 'draw-line') paths.push({ mode: currentMode, style: lineStyle, points: [pos] });
     });
 
     field.addEventListener('mousemove', (e) => {
         if (!isDrawing) return;
         const pos = getPos(e);
-
         if (currentMode === 'draw-free' || currentMode === 'erase') {
             paths[paths.length - 1].points.push(pos);
             redrawAll();
@@ -275,55 +233,33 @@
     window.addEventListener('mouseup', (e) => {
         if (!isDrawing) return;
         if (currentMode === 'draw-line') {
-            const pos = getPos(e);
-            paths.push({ mode: 'draw-line', style: lineStyle, points: [{x: startX, y: startY}, pos] });
+            paths.push({ mode: 'draw-line', style: lineStyle, points: [{x: startX, y: startY}, getPos(e)] });
             tCtx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
         }
-        isDrawing = false;
-        redrawAll();
+        isDrawing = false; redrawAll();
     });
 
-    function drawSinglePath(targetCtx, path) {
-        targetCtx.beginPath();
-        targetCtx.lineWidth = path.mode === 'erase' ? 20 : 3;
-        targetCtx.lineCap = 'round';
-        targetCtx.lineJoin = 'round';
-        
-        if (path.mode === 'erase') {
-            targetCtx.globalCompositeOperation = 'destination-out';
-            targetCtx.strokeStyle = 'rgba(0,0,0,1)';
-        } else {
-            targetCtx.globalCompositeOperation = 'source-over';
-            targetCtx.strokeStyle = '#ffff00';
-            if (path.style === 'dashed') targetCtx.setLineDash([10, 10]);
-            else targetCtx.setLineDash([]);
-        }
-
-        if (path.points.length < 2) return;
-        targetCtx.moveTo(path.points[0].x, path.points[0].y);
-        for (let i = 1; i < path.points.length; i++) {
-            targetCtx.lineTo(path.points[i].x, path.points[i].y);
-        }
-        targetCtx.stroke();
+    function drawSinglePath(t, p) {
+        t.beginPath(); t.lineWidth = p.mode === 'erase' ? 20 : 3; t.lineCap = 'round'; t.lineJoin = 'round';
+        if (p.mode === 'erase') { t.globalCompositeOperation = 'destination-out'; t.strokeStyle = 'rgba(0,0,0,1)'; }
+        else { t.globalCompositeOperation = 'source-over'; t.strokeStyle = '#ffff00'; t.setLineDash(p.style === 'dashed' ? [10, 10] : []); }
+        if (p.points.length < 2) return;
+        t.moveTo(p.points[0].x, p.points[0].y);
+        for (let i = 1; i < p.points.length; i++) t.lineTo(p.points[i].x, p.points[i].y);
+        t.stroke();
     }
 
-    function redrawAll() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        paths.forEach(p => drawSinglePath(ctx, p));
-    }
-
+    function redrawAll() { ctx.clearRect(0, 0, canvas.width, canvas.height); paths.forEach(p => drawSinglePath(ctx, p)); }
     function undo() { paths.pop(); redrawAll(); }
-    function clearCanvas() { paths = []; redrawAll(); }
+    function clearCanvas() { if(confirm("描いた線をすべて消しますか？")) { paths = []; redrawAll(); } }
 
-    // --- ドラッグ & 初期化 ---
+    // --- ドラッグ ---
     let dragged = null, ox, oy;
     function startDrag(e) {
         if (currentMode !== 'move') return;
-        dragged = e.target;
-        const rect = dragged.getBoundingClientRect();
+        dragged = e.target; const rect = dragged.getBoundingClientRect();
         ox = (e.touches ? e.touches[0].clientX : e.clientX) - (rect.left + rect.width/2);
         oy = (e.touches ? e.touches[0].clientY : e.clientY) - (rect.top + rect.height/2);
-        e.preventDefault();
     }
     document.addEventListener('mousemove', (e) => {
         if (!dragged) return;
@@ -332,27 +268,93 @@
         const cy = e.touches ? e.touches[0].clientY : e.clientY;
         dragged.style.left = `${Math.max(0, Math.min(100, (cx - r.left - ox) / r.width * 100))}%`;
         dragged.style.top = `${Math.max(0, Math.min(100, (cy - r.top - oy) / r.height * 100))}%`;
-        checkFormation(); // 移動中に随時判定
+        checkFormation();
     });
     document.addEventListener('mouseup', () => dragged = null);
 
-    // --- 初期データ生成 ---
+    // --- セーブ / ロード ---
+    function savePlayData() {
+        const name = document.getElementById('play-name').value || '無題';
+        const data = { 
+            f: document.getElementById('formation-name').value, n: name,
+            o: Array.from(document.querySelectorAll('.player.offense')).map(el => ({id: el.id, x: el.style.left, y: el.style.top, n: el.innerText})),
+            d: Array.from(document.querySelectorAll('.player.defense')).map(el => ({x: el.style.left, y: el.style.top})),
+            p: paths,
+            t: Array.from(document.querySelectorAll('.assignment-text')).map(el => el.value),
+            pn: Array.from(document.querySelectorAll('.pos-input')).map(el => el.value)
+        };
+        const saves = JSON.parse(localStorage.getItem('playbook_v3') || '{}');
+        saves[name] = data;
+        localStorage.setItem('playbook_v3', JSON.stringify(saves));
+        updateDropdown(); alert('保存しました');
+    }
+
+    function loadPlayData() {
+        const name = document.getElementById('saved-plays-dropdown').value;
+        const d = JSON.parse(localStorage.getItem('playbook_v3') || '{}')[name];
+        if (!d) return;
+        document.getElementById('field-players').innerHTML = '';
+        document.getElementById('assignments-container').innerHTML = '';
+        d.o.forEach((p, i) => {
+            createPlayerElement(p.id.replace('node-',''), p.n, p.x, p.y, 'offense');
+            addAssignmentBox(p.id.replace('node-',''), d.pn[i], d.t[i]);
+        });
+        d.d.forEach(p => createPlayerElement(`d${Math.random()}`, '×', p.x, p.y, 'defense'));
+        paths = d.p; document.getElementById('formation-name').value = d.f; document.getElementById('play-name').value = d.n;
+        redrawAll(); checkFormation();
+    }
+
+    function deletePlayData() {
+        const name = document.getElementById('saved-plays-dropdown').value;
+        if (!name || !confirm(`「${name}」を削除しますか？`)) return;
+        const saves = JSON.parse(localStorage.getItem('playbook_v3') || '{}');
+        delete saves[name]; localStorage.setItem('playbook_v3', JSON.stringify(saves));
+        updateDropdown();
+    }
+
+    function updateDropdown() {
+        const ds = JSON.parse(localStorage.getItem('playbook_v3') || '{}');
+        const sel = document.getElementById('saved-plays-dropdown');
+        sel.innerHTML = '<option value="">-- ロード --</option>';
+        Object.keys(ds).forEach(k => sel.innerHTML += `<option value="${k}">${k}</option>`);
+    }
+
+    function exportPlayData() {
+        const data = { f: document.getElementById('formation-name').value, n: document.getElementById('play-name').value, o: Array.from(document.querySelectorAll('.player.offense')).map(el => ({x: el.style.left, y: el.style.top, n: el.innerText})), d: Array.from(document.querySelectorAll('.player.defense')).map(el => ({x: el.style.left, y: el.style.top})), p: paths, t: Array.from(document.querySelectorAll('.assignment-text')).map(el => el.value) };
+        navigator.clipboard.writeText(JSON.stringify(data)).then(() => alert("共有コードをコピーしました"));
+    }
+
+    function importPlayData() {
+        const code = prompt("共有コードを貼り付けてください");
+        if (!code) return;
+        const d = JSON.parse(code);
+        document.getElementById('field-players').innerHTML = '';
+        document.getElementById('assignments-container').innerHTML = '';
+        d.o.forEach((p, i) => { createPlayerElement(`o${i}`, p.n, p.x, p.y, 'offense'); addAssignmentBox(`o${i}`, p.n, d.t[i]); });
+        d.d.forEach(p => createPlayerElement(`d${Math.random()}`, '×', p.x, p.y, 'defense'));
+        paths = d.p; redrawAll(); checkFormation();
+    }
+
+    function addAssignmentBox(id, name, text = "") {
+        const box = document.createElement('div'); box.className = 'assignment-box';
+        box.innerHTML = `<div class="assignment-label-area"><b>${name}</b><br><input type="text" value="${name}" data-target="${id}" style="width:50px" class="pos-input"></div><textarea class="assignment-text" placeholder="役割...">${text}</textarea>`;
+        document.getElementById('assignments-container').appendChild(box);
+    }
+
+    function addDefense() { createPlayerElement(`d${Date.now()}`, '×', 50, 40, 'defense'); checkFormation(); }
+
+    // 初期化
     offenseInitialData.forEach(p => {
         createPlayerElement(p.id, p.name, p.x, p.y, 'offense');
-        const box = document.createElement('div'); box.className = 'assignment-box';
-        box.innerHTML = `<div class="assignment-label-area"><b>${p.name}</b><br><input type="text" value="${p.name}" data-target="${p.id}" style="width:50px" class="pos-input"></div><textarea class="assignment-text" placeholder="役割..."></textarea>`;
-        document.getElementById('assignments-container').appendChild(box);
+        addAssignmentBox(p.id, p.name);
     });
-
     document.getElementById('assignments-container').addEventListener('input', (e) => {
         if (e.target.classList.contains('pos-input')) {
             const node = document.getElementById(`node-${e.target.dataset.target}`);
             if (node) node.innerText = e.target.value;
         }
     });
-
-    // 読み込み直後に初期判定を実行
-    setTimeout(checkFormation, 100);
+    updateDropdown(); setTimeout(checkFormation, 100);
 </script>
 </body>
 </html>
